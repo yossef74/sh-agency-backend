@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SH Agency — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --primary:#bc13fe; --secondary:#00e0ff; --accent:#ff3c6e;
+  --bg:#030308; --surface:#0c0c19; --card:rgba(12,12,25,.9);
+  --border:rgba(188,19,254,.15); --dim:#6b7280; --text:#f0f0ff;
+  --green:#00e5a0; --red:#ff3c6e;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:100%;max-width:420px;backdrop-filter:blur(20px);box-shadow:0 0 80px rgba(188,19,254,.1)}
+.login-box h1{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;margin-bottom:6px}
+.login-box h1 span{color:var(--primary)}
+.login-box p{color:var(--dim);font-size:.9rem;margin-bottom:32px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.field input{width:100%;padding:14px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:.95rem;font-family:inherit;outline:none;transition:border .3s}
+.field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(188,19,254,.1)}
+.login-err{color:var(--red);font-size:.85rem;margin-bottom:16px;display:none}
+.btn-login{width:100%;padding:15px;background:linear-gradient(135deg,var(--primary),#7800c8);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:transform .3s,box-shadow .3s}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(188,19,254,.4)}
+
+/* ── LAYOUT ── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;width:240px;height:100%;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:28px 0;z-index:100}
+.sidebar-logo{padding:0 24px 28px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.sidebar-logo h2{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:2px}
+.sidebar-logo h2 span{color:var(--primary)}
+.sidebar-logo p{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:13px 24px;color:var(--dim);cursor:pointer;transition:all .3s;font-size:.9rem;border-left:2px solid transparent;text-decoration:none}
+.nav-item:hover,.nav-item.active{color:var(--text);background:rgba(188,19,254,.06);border-left-color:var(--primary)}
+.nav-item i{width:18px;text-align:center}
+.badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px}
+.sidebar-footer{margin-top:auto;padding:16px 24px;border-top:1px solid var(--border)}
+.logout-btn{width:100%;padding:10px;background:rgba(255,60,110,.08);border:1px solid rgba(255,60,110,.2);color:var(--red);border-radius:8px;cursor:pointer;font-size:.85rem;font-family:inherit;transition:background .3s}
+.logout-btn:hover{background:rgba(255,60,110,.15)}
+.main{margin-left:240px;padding:40px 36px;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+.page-header{margin-bottom:32px}
+.page-header h1{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800}
+.page-header p{color:var(--dim);margin-top:4px}
+
+/* ── STATS CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:transform .3s,box-shadow .3s}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(188,19,254,.1)}
+.stat-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s}
+.stat-card:hover::before{opacity:1}
+.stat-card.purple::before{background:linear-gradient(135deg,rgba(188,19,254,.05),transparent)}
+.stat-card.cyan::before{background:linear-gradient(135deg,rgba(0,224,255,.05),transparent)}
+.stat-card.green::before{background:linear-gradient(135deg,rgba(0,229,160,.05),transparent)}
+.stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:16px}
+.stat-icon.purple{background:rgba(188,19,254,.12);color:var(--primary)}
+.stat-icon.cyan{background:rgba(0,224,255,.12);color:var(--secondary)}
+.stat-icon.green{background:rgba(0,229,160,.12);color:var(--green)}
+.stat-card h3{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;margin-bottom:4px}
+.stat-card p{color:var(--dim);font-size:.85rem}
+
+/* ── TABLES ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.card-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{padding:12px 20px;text-align:left;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+td{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.9rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.msg-preview{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dim)}
+.unread-dot{width:8px;height:8px;background:var(--primary);border-radius:50%;display:inline-block;margin-right:8px;box-shadow:0 0 8px var(--primary)}
+.tag{display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
+.tag.unread{background:rgba(188,19,254,.12);color:var(--primary);border:1px solid rgba(188,19,254,.2)}
+.tag.read{background:rgba(255,255,255,.04);color:var(--dim)}
+.action-btns{display:flex;gap:8px}
+.btn-sm{padding:6px 12px;border-radius:8px;border:none;font-size:11px;cursor:pointer;font-family:inherit;transition:all .3s;display:flex;align-items:center;gap:5px}
+.btn-sm.danger{background:rgba(255,60,110,.1);color:var(--red);border:1px solid rgba(255,60,110,.2)}
+.btn-sm.danger:hover{background:rgba(255,60,110,.2)}
+.btn-sm.success{background:rgba(0,229,160,.1);color:var(--green);border:1px solid rgba(0,229,160,.2)}
+.btn-sm.success:hover{background:rgba(0,229,160,.2)}
+.btn-sm.primary{background:rgba(188,19,254,.1);color:var(--primary);border:1px solid rgba(188,19,254,.2)}
+.btn-sm.primary:hover{background:rgba(188,19,254,.2)}
+.empty-state{padding:60px;text-align:center;color:var(--dim)}
+.empty-state i{font-size:2.5rem;margin-bottom:12px;opacity:.3;display:block}
+
+/* ── PORTFOLIO GRID ── */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;padding:24px}
+.proj-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform .3s,box-shadow .3s}
+.proj-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(188,19,254,.12)}
+.proj-card img{width:100%;height:180px;object-fit:cover}
+.proj-card-body{padding:16px}
+.proj-card-body h4{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:4px}
+.proj-cat{font-size:11px;color:var(--primary);letter-spacing:1px;margin-bottom:8px}
+.proj-card-body p{font-size:.85rem;color:var(--dim);margin-bottom:14px}
+.proj-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.proj-tag{font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);color:var(--dim)}
+
+/* ── MODAL / FORM ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:24px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-field{margin-bottom:16px}
+.form-field label{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.form-field input,.form-field textarea,.form-field select{width:100%;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:var(--text);font-size:.9rem;font-family:inherit;outline:none;transition:border .3s}
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--primary)}
+.form-field textarea{resize:vertical;min-height:100px}
+.modal-actions{display:flex;gap:12px;margin-top:8px}
+.btn-primary{padding:12px 28px;background:linear-gradient(135deg,var(--primary),#7800c8);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:transform .3s,box-shadow .3s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(188,19,254,.4)}
+.btn-cancel{padding:12px 24px;background:transparent;color:var(--dim);border:1px solid rgba(255,255,255,.1);border-radius:10px;font-family:inherit;cursor:pointer;transition:all .3s}
+.btn-cancel:hover{border-color:var(--dim);color:var(--text)}
+.add-btn{padding:10px 20px;background:linear-gradient(135deg,var(--primary),#7800c8);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:transform .3s,box-shadow .3s}
+.add-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(188,19,254,.35)}
+
+/* ── MSG DETAIL ── */
+.msg-detail{padding:24px;line-height:1.8}
+.msg-detail .meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.meta-item label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:4px}
+.meta-item span{font-size:.95rem}
+.msg-body{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:20px;color:var(--dim);line-height:1.8}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:32px;right:32px;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:.9rem;transform:translateY(100px);opacity:0;transition:all .4s;display:flex;align-items:center;gap:10px;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{border-color:rgba(0,229,160,.3);background:rgba(0,229,160,.05)}
+#toast.error{border-color:rgba(255,60,110,.3);background:rgba(255,60,110,.05)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:100%;height:auto;position:relative;flex-direction:row;padding:0;border-right:none;border-bottom:1px solid var(--border)}
+  .main{margin-left:0}
+  .stats-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>SH <span>AGENCY</span></h1>
+    <p>Admin Panel — Enter your credentials</p>
+    <div class="field"><label>Username</label><input type="text" id="loginUser" placeholder="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <p class="login-err" id="loginErr"><i class="fas fa-circle-exclamation"></i> Invalid credentials</p>
+    <button class="btn-login" onclick="doLogin()"><i class="fas fa-arrow-right-to-bracket"></i> Access Panel</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>SH <span>AGENCY</span></h2>
+      <p>ADMIN PANEL</p>
+    </div>
+    <a class="nav-item active" onclick="showPage('dashboard')"><i class="fas fa-gauge-high"></i> Dashboard</a>
+    <a class="nav-item" onclick="showPage('messages')"><i class="fas fa-envelope"></i> Messages <span class="badge" id="unread-badge" style="display:none">0</span></a>
+    <a class="nav-item" onclick="showPage('portfolio')"><i class="fas fa-briefcase"></i> Portfolio</a>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Welcome back, SH Agency 👋</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-icon purple"><i class="fas fa-envelope"></i></div>
+          <h3 id="stat-total">—</h3>
+          <p>Total Messages</p>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-icon cyan"><i class="fas fa-bell"></i></div>
+          <h3 id="stat-unread">—</h3>
+          <p>Unread Messages</p>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon green"><i class="fas fa-briefcase"></i></div>
+          <h3 id="stat-projects">—</h3>
+          <p>Active Projects</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Latest Messages</h3>
+          <a class="btn-sm primary" onclick="showPage('messages')" style="cursor:pointer"><i class="fas fa-arrow-right"></i> View All</a>
+        </div>
+        <table id="dash-msgs-table"><tbody id="dash-msgs"></tbody></table>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="page" id="page-messages">
+      <div class="page-header">
+        <h1>Messages</h1>
+        <p>All contact form submissions</p>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Status</th><th>Name</th><th>Email</th><th>Company</th><th>Message</th><th>Date</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="msgs-tbody"></tbody>
+        </table>
+        <div id="msgs-empty" class="empty-state" style="display:none"><i class="fas fa-inbox"></i>No messages yet</div>
+      </div>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div class="page" id="page-portfolio">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <h1>Portfolio</h1>
+          <p>Manage your projects</p>
+        </div>
+        <button class="add-btn" onclick="openAddProject()"><i class="fas fa-plus"></i> Add Project</button>
+      </div>
+      <div id="proj-grid" class="proj-grid"></div>
+      <div id="proj-empty" class="empty-state" style="display:none"><i class="fas fa-briefcase"></i>No projects yet</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODALS ── -->
+<!-- Message Detail -->
+<div class="modal-overlay" id="msg-modal">
+  <div class="modal">
+    <h3><i class="fas fa-envelope" style="color:var(--primary);margin-right:10px"></i>Message Detail</h3>
+    <div id="msg-modal-content"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-cancel" onclick="closeModal('msg-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Project -->
+<div class="modal-overlay" id="proj-modal">
+  <div class="modal">
+    <h3 id="proj-modal-title">Add Project</h3>
+    <div class="form-row">
+      <div class="form-field"><label>Title</label><input id="pf-title" placeholder="Project name"></div>
+      <div class="form-field"><label>Category</label>
+        <select id="pf-category">
+          <option>Branding</option><option>UI/UX Design</option><option>Social Media</option>
+          <option>Web Development</option><option>Graphic Design</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-field"><label>Description</label><textarea id="pf-desc" placeholder="Short project description..."></textarea></div>
+    <div class="form-row">
+      <div class="form-field"><label>Image URL</label><input id="pf-img" placeholder="https://..."></div>
+      <div class="form-field"><label>Project URL</label><input id="pf-url" placeholder="https://..."></div>
+    </div>
+    <div class="form-field"><label>Tags (comma separated)</label><input id="pf-tags" placeholder="React, Figma, Branding"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveProject()"><i class="fas fa-save"></i> Save</button>
+      <button class="btn-cancel" onclick="closeModal('proj-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────
+// غيّر ده لـ URL الباك اند بعد ما ترفعه على Vercel
+const API = localStorage.getItem('sh_api_url') || 'http://localhost:8000';
+
+let authHeader = '';
+let editingProjectId = null;
+
+// ── LOGIN ──────────────────────────────────────────────
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if (!u || !p) return;
+  authHeader = 'Basic ' + btoa(u + ':' + p);
+  try {
+    const res = await apiFetch('/api/admin/stats');
+    if (res.ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      loadDashboard();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+      authHeader = '';
+    }
+  } catch {
+    document.getElementById('loginErr').style.display = 'block';
+    authHeader = '';
+  }
+}
+
+function doLogout() {
+  authHeader = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+// ── API HELPER ─────────────────────────────────────────
+function apiFetch(path, opts = {}) {
+  return fetch(API + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', Authorization: authHeader, ...(opts.headers || {}) }
+  });
+}
+
+// ── NAVIGATION ─────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event?.currentTarget?.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'messages') loadMessages();
+  if (name === 'portfolio') loadPortfolio();
+}
+
+// ── DASHBOARD ──────────────────────────────────────────
+async function loadDashboard() {
+  const res = await apiFetch('/api/admin/stats');
+  const d = await res.json();
+  document.getElementById('stat-total').textContent = d.total_messages;
+  document.getElementById('stat-unread').textContent = d.unread_messages;
+  document.getElementById('stat-projects').textContent = d.total_projects;
+  const badge = document.getElementById('unread-badge');
+  if (d.unread_messages > 0) { badge.textContent = d.unread_messages; badge.style.display = 'inline'; }
+  else badge.style.display = 'none';
+
+  const mres = await apiFetch('/api/admin/messages');
+  const msgs = await mres.json();
+  const tbody = document.getElementById('dash-msgs');
+  tbody.innerHTML = msgs.slice(0, 5).map(m => `
+    <tr>
+      <td>${m.is_read ? '' : '<span class="unread-dot"></span>'}<strong>${esc(m.name)}</strong></td>
+      <td style="color:var(--dim)">${esc(m.email)}</td>
+      <td class="msg-preview">${esc(m.message)}</td>
+      <td style="color:var(--dim);font-size:.8rem">${fmtDate(m.created_at)}</td>
+      <td><button class="btn-sm primary" onclick="viewMsg(${m.id})"><i class="fas fa-eye"></i></button></td>
+    </tr>`).join('') || '<tr><td colspan="5" class="empty-state"><i class="fas fa-inbox"></i> No messages</td></tr>';
+}
+
+// ── MESSAGES ───────────────────────────────────────────
+let allMsgs = [];
+async function loadMessages() {
+  const res = await apiFetch('/api/admin/messages');
+  allMsgs = await res.json();
+  renderMessages();
+}
+
+function renderMessages() {
+  const tbody = document.getElementById('msgs-tbody');
+  const empty = document.getElementById('msgs-empty');
+  if (!allMsgs.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = allMsgs.map(m => `
+    <tr id="msg-row-${m.id}">
+      <td><span class="tag ${m.is_read ? 'read' : 'unread'}">${m.is_read ? 'Read' : 'New'}</span></td>
+      <td><strong>${esc(m.name)}</strong></td>
+      <td style="color:var(--dim)">${esc(m.email)}</td>
+      <td style="color:var(--dim)">${esc(m.company || '—')}</td>
+      <td class="msg-preview">${esc(m.message)}</td>
+      <td style="color:var(--dim);font-size:.8rem;white-space:nowrap">${fmtDate(m.created_at)}</td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-sm primary" onclick="viewMsg(${m.id})"><i class="fas fa-eye"></i></button>
+          ${!m.is_read ? `<button class="btn-sm success" onclick="markRead(${m.id})"><i class="fas fa-check"></i></button>` : ''}
+          <button class="btn-sm danger" onclick="deleteMsg(${m.id})"><i class="fas fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function viewMsg(id) {
+  const m = allMsgs.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('msg-modal-content').innerHTML = `
+    <div class="msg-detail">
+      <div class="meta">
+        <div class="meta-item"><label>Name</label><span>${esc(m.name)}</span></div>
+        <div class="meta-item"><label>Email</label><span><a href="mailto:${esc(m.email)}" style="color:var(--secondary)">${esc(m.email)}</a></span></div>
+        <div class="meta-item"><label>Company</label><span>${esc(m.company || '—')}</span></div>
+        <div class="meta-item"><label>Date</label><span>${fmtDate(m.created_at)}</span></div>
+      </div>
+      <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:10px">Message</label>
+      <div class="msg-body">${esc(m.message)}</div>
+    </div>`;
+  openModal('msg-modal');
+  if (!m.is_read) await markRead(id, true);
+}
+
+async function markRead(id, silent = false) {
+  await apiFetch(`/api/admin/messages/${id}/read`, { method: 'PATCH' });
+  const m = allMsgs.find(x => x.id === id);
+  if (m) m.is_read = 1;
+  renderMessages();
+  if (!silent) toast('Marked as read ✓', 'success');
+  loadDashboard();
+}
+
+async function deleteMsg(id) {
+  if (!confirm('Delete this message?')) return;
+  await apiFetch(`/api/admin/messages/${id}`, { method: 'DELETE' });
+  allMsgs = allMsgs.filter(x => x.id !== id);
+  renderMessages();
+  toast('Message deleted', 'success');
+  loadDashboard();
+}
+
+// ── PORTFOLIO ──────────────────────────────────────────
+let allProjects = [];
+async function loadPortfolio() {
+  const res = await apiFetch('/api/portfolio');
+  allProjects = await res.json();
+  renderPortfolio();
+}
+
+function renderPortfolio() {
+  const grid = document.getElementById('proj-grid');
+  const empty = document.getElementById('proj-empty');
+  if (!allProjects.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = allProjects.map(p => `
+    <div class="proj-card">
+      <img src="${esc(p.image_url || 'https://placehold.co/600x400/0c0c19/bc13fe?text=Project')}" alt="${esc(p.title)}" loading="lazy" onerror="this.src='https://placehold.co/600x400/0c0c19/bc13fe?text=No+Image'">
+      <div class="proj-card-body">
+        <div class="proj-cat">${esc(p.category)}</div>
+        <h4>${esc(p.title)}</h4>
+        <p>${esc(p.description || '')}</p>
+        <div class="proj-tags">${(p.tags || '').split(',').filter(Boolean).map(t => `<span class="proj-tag">${esc(t.trim())}</span>`).join('')}</div>
+        <div class="action-btns">
+          <button class="btn-sm primary" onclick="openEditProject(${p.id})"><i class="fas fa-pen"></i> Edit</button>
+          <button class="btn-sm danger" onclick="deleteProject(${p.id})"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddProject() {
+  editingProjectId = null;
+  document.getElementById('proj-modal-title').textContent = 'Add New Project';
+  ['pf-title','pf-desc','pf-img','pf-url','pf-tags'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pf-category').value = 'Branding';
+  openModal('proj-modal');
+}
+
+function openEditProject(id) {
+  const p = allProjects.find(x => x.id === id);
+  if (!p) return;
+  editingProjectId = id;
+  document.getElementById('proj-modal-title').textContent = 'Edit Project';
+  document.getElementById('pf-title').value = p.title;
+  document.getElementById('pf-category').value = p.category;
+  document.getElementById('pf-desc').value = p.description || '';
+  document.getElementById('pf-img').value = p.image_url || '';
+  document.getElementById('pf-url').value = p.project_url || '';
+  document.getElementById('pf-tags').value = p.tags || '';
+  openModal('proj-modal');
+}
+
+async function saveProject() {
+  const body = {
+    title:       document.getElementById('pf-title').value.trim(),
+    category:    document.getElementById('pf-category').value,
+    description: document.getElementById('pf-desc').value.trim(),
+    image_url:   document.getElementById('pf-img').value.trim(),
+    project_url: document.getElementById('pf-url').value.trim(),
+    tags:        document.getElementById('pf-tags').value.trim(),
+  };
+  if (!body.title) { toast('Title is required', 'error'); return; }
+  const url   = editingProjectId ? `/api/admin/portfolio/${editingProjectId}` : '/api/admin/portfolio';
+  const method = editingProjectId ? 'PUT' : 'POST';
+  const res = await apiFetch(url, { method, body: JSON.stringify(body) });
+  if (res.ok) {
+    closeModal('proj-modal');
+    toast(editingProjectId ? 'Project updated ✓' : 'Project added ✓', 'success');
+    loadPortfolio();
+  } else toast('Something went wrong', 'error');
+}
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project?')) return;
+  await apiFetch(`/api/admin/portfolio/${id}`, { method: 'DELETE' });
+  allProjects = allProjects.filter(x => x.id !== id);
+  renderPortfolio();
+  toast('Project deleted', 'success');
+}
+
+// ── HELPERS ────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<i class="fas fa-${type === 'success' ? 'circle-check' : 'circle-exclamation'}"></i> ${msg}`;
+  t.className = `show ${type}`;
+  setTimeout(() => t.className = '', 3000);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'Z').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── API URL SETUP ──────────────────────────────────────
+// لو حابب تغير API URL من غير ما تعدل الكود
+const params = new URLSearchParams(location.search);
+if (params.get('api')) localStorage.setItem('sh_api_url', params.get('api'));
+</script>
+</body>
+</html>
